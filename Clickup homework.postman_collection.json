@@ -7,18 +7,158 @@
 	},
 	"item": [
 		{
-			"name": "Get all lists",
-			"event": [
+			"name": "New Folder",
+			"item": [
 				{
-					"listen": "prerequest",
-					"script": {
-						"exec": [
-							""
+					"name": "Update list with pre and post http",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"try {\r",
+									"    var nameValue = pm.variables.replaceIn(\"{{$randomProductName}}\");\r",
+									"\r",
+									"    pm.sendRequest({\r",
+									"url: \"https://api.clickup.com/api/v2/folder/90156822618/list\",\r",
+									"        method: \"POST\",\r",
+									"        header: {\r",
+									"            \"Authorization\": \"pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE\",\r",
+									"            \"Content-Type\": \"application/json\"\r",
+									"        },\r",
+									"        body: {\r",
+									"            mode: 'raw',\r",
+									"            raw: JSON.stringify({\r",
+									"                name: nameValue\r",
+									"            })\r",
+									"        }\r",
+									"    }, function (err, res) {\r",
+									"        if (err) {\r",
+									"            console.error(err);\r",
+									"        } else {\r",
+									"            var jsonData = res.json();\r",
+									"            pm.environment.set(\"created_list_name\", jsonData.name);\r",
+									"        }\r",
+									"    });\r",
+									"} catch (e) {\r",
+									"    console.error({\r",
+									"        type: \"Error\",\r",
+									"        name: e.name,\r",
+									"        message: e.message\r",
+									"    });\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {\r",
+									"    pm.response.to.have.status(200);\r",
+									"});\r",
+									"pm.test(\"Check that id equal to created id\", function () {\r",
+									"    var jsonData = pm.response.json();\r",
+									"    pm.expect(jsonData.id).to.eql(pm.environment.get(\"created_id\")); // postbot поправив правил.\r",
+									"});\r",
+									"\r",
+									"let jsonData = pm.response.json();\r",
+									"pm.collectionVariables.set(\"updatedName\", jsonData.name);\r",
+									"\r",
+									"pm.test(\"Name was updated correctly\", function () {\r",
+									"    pm.expect(jsonData.name).to.eql(pm.collectionVariables.get(\"updatedName\"));\r",
+									"});\r",
+									"\r",
+									"try {\r",
+									"    var res = pm.sendRequest({\r",
+									"        url: \"https://api.clickup.com/api/v2/list/\" + pm.environment.get(\"created_id\"),\r",
+									"        method: \"DELETE\",\r",
+									"        header: { \"Authorization\": \"pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE\" }\r",
+									"\r",
+									"}, function (err, res) {\r",
+									"    if (err) {\r",
+									"        console.error(err);\r",
+									"    } else {\r",
+									"        var jsonData = res.json();\r",
+									"        pm.environment.set(\"name\", \"value\");\r",
+									"    }\r",
+									"});\r",
+									"} catch (e) {\r",
+									"    console.log(e);\r",
+									"}\r",
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "apikey",
+							"apikey": [
+								{
+									"key": "value",
+									"value": "pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE",
+									"type": "string"
+								},
+								{
+									"key": "key",
+									"value": "Authorization",
+									"type": "string"
+								},
+								{
+									"key": "in",
+									"value": "header",
+									"type": "string"
+								}
+							]
+						},
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							},
+							{
+								"key": "content-type",
+								"value": "application/json"
+							}
 						],
-						"type": "text/javascript",
-						"packages": {}
-					}
-				},
+						"body": {
+							"mode": "raw",
+							"raw": "{\"name\":\"{{$randomProductName}}\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{URL}}/list/{{created_id}}",
+							"host": [
+								"{{URL}}"
+							],
+							"path": [
+								"list",
+								"{{created_id}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Get list",
+			"event": [
 				{
 					"listen": "test",
 					"script": {
@@ -26,13 +166,65 @@
 							"pm.test(\"Response status code is 200\", function () {\r",
 							"  pm.response.to.have.status(200);\r",
 							"});\r",
+							"pm.test(\"Deleted - true\", function () {\r",
+							"   var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.deleted).to.eql(true);\r",
+							"});\r",
 							"\r",
-							"const response = pm.response.json();\r",
-							"console.log(\"нижче буде id\")\r",
-							"console.log(\"id:\", response.id);\r",
-							"pm.test(\"Body matches id\", function () {\r",
-							"    pm.expect(pm.response.text()).to.include(\"id\");\r",
-							"});"
+							"var Ajv = require('ajv');\r",
+							"var ajv = new Ajv();\r",
+							"\r",
+							"var schema = {\r",
+							"    type: \"object\",\r",
+							"    properties: {\r",
+							"        id: { type: \"string\" },\r",
+							"        name: { type: \"string\" },\r",
+							"    },\r",
+							"    required: [\"id\", \"name\"]\r",
+							"};\r",
+							"\r",
+							"var responseData = pm.response.json();\r",
+							"\r",
+							"var  validate = ajv.compile(schema);\r",
+							"\r",
+							"pm.test(\"Schema is valid\", function () {\r",
+							"  var valid = validate(responseData);\r",
+							"  pm.expect(valid, validate.errors).to.be.true;\r",
+							"});\r",
+							"pm.test(\"Deleted - true\", function () {\r",
+							"   var jsonData = pm.response.json();\r",
+							"    pm.expect(jsonData.deleted).to.eql(true);\r",
+							"});\r",
+							"\r",
+							"try {\r",
+							"\r",
+							"    var res = pm.sendRequest({\r",
+							"    url: \"https://api.clickup.com/api/v2/list/901511162624\",\r",
+							"    method: \"DELETE\",\r",
+							"        header: { \"Authorization\": \"pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE\" } \r",
+							"    \r",
+							"}, function (err, res) {\r",
+							"    if (err) {\r",
+							"        console.error(err);\r",
+							"    } else {\r",
+							"        var jsonData = res.json();\r",
+							"        pm.environment.set(\"name\", \"value\");\r",
+							"    }\r",
+							"});\r",
+							"} catch (e) {\r",
+							"    console.log(e);\r",
+							"}\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {}
+					}
+				},
+				{
+					"listen": "prerequest",
+					"script": {
+						"exec": [
+							""
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -43,23 +235,17 @@
 				"disableBodyPruning": true
 			},
 			"request": {
-				"auth": {
-					"type": "apikey",
-					"apikey": [
-						{
-							"key": "value",
-							"value": "{{Authorization}}",
-							"type": "string"
-						},
-						{
-							"key": "key",
-							"value": "Authorization",
-							"type": "string"
-						}
-					]
-				},
 				"method": "GET",
-				"header": [],
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE"
+					},
+					{
+						"key": "accept",
+						"value": "application/json"
+					}
+				],
 				"body": {
 					"mode": "raw",
 					"raw": "",
@@ -70,13 +256,13 @@
 					}
 				},
 				"url": {
-					"raw": "{{URL}}/folder/{{list_id}}",
+					"raw": "{{URL}}/list/{{created_id}}",
 					"host": [
 						"{{URL}}"
 					],
 					"path": [
-						"folder",
-						"{{list_id}}"
+						"list",
+						"{{created_id}}"
 					]
 				}
 			},
@@ -140,18 +326,13 @@
 					}
 				},
 				"url": {
-					"raw": "https://api.clickup.com/api/v2/folder/{{list_id}}/list",
-					"protocol": "https",
+					"raw": "{{URL}}/folder/{{Folder_id}}/list",
 					"host": [
-						"api",
-						"clickup",
-						"com"
+						"{{URL}}"
 					],
 					"path": [
-						"api",
-						"v2",
 						"folder",
-						"{{list_id}}",
+						"{{Folder_id}}",
 						"list"
 					]
 				}
@@ -181,6 +362,13 @@
 							"pm.test(\"Check that id equal to created id\", function () {\r",
 							"    var jsonData = pm.response.json();\r",
 							"    pm.expect(jsonData.id).to.eql(pm.environment.get(\"created_id\")); // postbot поправив правил.\r",
+							"});\r",
+							"\r",
+							"let jsonData = pm.response.json();\r",
+							"pm.collectionVariables.set(\"updatedName\", jsonData.name);\r",
+							"\r",
+							"pm.test(\"Name was updated correctly\", function () {\r",
+							"    pm.expect(jsonData.name).to.eql(pm.collectionVariables.get(\"updatedName\"));\r",
 							"});\r",
 							""
 						],
@@ -215,16 +403,11 @@
 					}
 				},
 				"url": {
-					"raw": "https://api.clickup.com/api/v2/list/{{created_id}}",
-					"protocol": "https",
+					"raw": "{{URL}}/list/{{created_id}}",
 					"host": [
-						"api",
-						"clickup",
-						"com"
+						"{{URL}}"
 					],
 					"path": [
-						"api",
-						"v2",
 						"list",
 						"{{created_id}}"
 					]
@@ -236,12 +419,26 @@
 			"name": "Delete list",
 			"event": [
 				{
-					"listen": "test",
+					"listen": "prerequest",
 					"script": {
 						"exec": [
-							"pm.test(\"Status code is 200\", function () {\r",
-							"pm.response.to.have.status(200);\r",
+							"try {\r",
+							"    var response = await pm.sendRequest({\r",
+							"        url: \"https://api.clickup.com/api/v2/list/901511404358\",\r",
+							"        method: \"GET\",\r",
+							"        header: { \"Authorization\": \"pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE\" } \r",
+							"    \r",
+							"}, function (err, res) {\r",
+							"    if (err) {\r",
+							"        console.error(err);\r",
+							"    } else {\r",
+							"        var jsonData = res.json();\r",
+							"        pm.environment.set(\"name\", \"value\");\r",
+							"    }\r",
 							"});\r",
+							"} catch (e) {\r",
+							"    console.log(e);\r",
+							"}\r",
 							""
 						],
 						"type": "text/javascript",
@@ -249,9 +446,30 @@
 					}
 				},
 				{
-					"listen": "prerequest",
+					"listen": "test",
 					"script": {
 						"exec": [
+							"pm.test(\"Status code is 200\", function () {\r",
+							"    pm.response.to.have.status(200);\r",
+							"});\r",
+							"\r",
+							"try{\r",
+							"    var res = pm.sendRequest({\r",
+							"    url: \"https://api.clickup.com/api/v2/list/901511404358\",\r",
+							"    method: \"GET\",\r",
+							"        header: { \"Authorization\": \"pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE\" } \r",
+							"    \r",
+							"}, function (err, res) {\r",
+							"    if (err) {\r",
+							"        console.error(err);\r",
+							"    } else {\r",
+							"        var jsonData = res.json();\r",
+							"        pm.environment.set(\"name\", \"value\");\r",
+							"    }\r",
+							"});\r",
+							"} catch (e) {\r",
+							"    console.log(e);\r",
+							"}\r",
 							""
 						],
 						"type": "text/javascript",
@@ -272,16 +490,11 @@
 					}
 				],
 				"url": {
-					"raw": "https://api.clickup.com/api/v2/list/{{created_id}}",
-					"protocol": "https",
+					"raw": "{{URL}}/list/{{created_id}}",
 					"host": [
-						"api",
-						"clickup",
-						"com"
+						"{{URL}}"
 					],
 					"path": [
-						"api",
-						"v2",
 						"list",
 						"{{created_id}}"
 					]
@@ -290,19 +503,79 @@
 			"response": []
 		},
 		{
-			"name": "Get list",
+			"name": "Get all lists",
 			"event": [
 				{
 					"listen": "test",
 					"script": {
 						"exec": [
 							"pm.test(\"Response status code is 200\", function () {\r",
-							"  pm.response.to.have.status(200);\r",
+							"    pm.response.to.have.status(200);\r",
 							"});\r",
-							"pm.test(\"Deleted - true\", function () {\r",
-							"   var jsonData = pm.response.json();\r",
-							"    pm.expect(jsonData.deleted).to.eql(true);\r",
-							"});"
+							"\r",
+							"console.log(\"нижче буде id\");\r",
+							"console.log(\"id:\", pm.response.json().id);\r",
+							"pm.test(\"Body matches id\", function () {\r",
+							"    pm.expect(pm.response.text()).to.include(\"id\");\r",
+							"});\r",
+							"\r",
+							"var Ajv = require('ajv');\r",
+							"var ajv = new Ajv();\r",
+							"\r",
+							"var schema = {\r",
+							"    \"type\": \"object\",\r",
+							"    \"properties\": {\r",
+							"        \"id\": { \"type\": \"string\" },\r",
+							"        \"name\": { \"type\": \"string\" },\r",
+							"        \"orderindex\": { \"type\": \"integer\" },\r",
+							"        \"override_statuses\": { \"type\": \"boolean\" },\r",
+							"        \"hidden\": { \"type\": \"boolean\" },\r",
+							"        \"space\": {\r",
+							"            \"type\": \"object\",\r",
+							"            \"properties\": {\r",
+							"                \"id\": { \"type\": \"string\" },\r",
+							"                \"name\": { \"type\": \"string\" },\r",
+							"                \"access\": { \"type\": \"boolean\" }\r",
+							"            },\r",
+							"            \"required\": [\r",
+							"                \"id\",\r",
+							"                \"name\",\r",
+							"                \"access\"\r",
+							"            ]\r",
+							"        }\r",
+							"\r",
+							"    },\r",
+							"    \"required\": [\r",
+							"        \"id\",\r",
+							"        \"name\",\r",
+							"        \"orderindex\",\r",
+							"        \"override_statuses\",\r",
+							"        \"hidden\",\r",
+							"        \"space\"\r",
+							"    ]\r",
+							"};\r",
+							"var validate = ajv.compile(schema);\r",
+							"\r",
+							"pm.test(\"Schema is valid\", function () {\r",
+							"    var valid = validate(pm.response.json());\r",
+							"    pm.expect(valid, JSON.stringify(validate.errors)).to.be.true;\r",
+							"});\r",
+							"\r",
+							"var responseData = pm.response.json();\r",
+							"console.log(responseData);\r",
+							"\r",
+							"responseData.statuses.forEach(status => {\r",
+							"    console.log(\"status id:\", status.id);\r",
+							"});\r",
+							"\r",
+							"responseData.statuses.forEach(status => {\r",
+							"    console.log(\"id:\", status.id); \r",
+							"});\r",
+							"\r",
+							"responseData.lists.forEach(list => {\r",
+							"    console.log(\"id:\", list.id);\r",
+							"});\r",
+							""
 						],
 						"type": "text/javascript",
 						"packages": {}
@@ -323,17 +596,23 @@
 				"disableBodyPruning": true
 			},
 			"request": {
+				"auth": {
+					"type": "apikey",
+					"apikey": [
+						{
+							"key": "value",
+							"value": "{{Authorization}}",
+							"type": "string"
+						},
+						{
+							"key": "key",
+							"value": "Authorization",
+							"type": "string"
+						}
+					]
+				},
 				"method": "GET",
-				"header": [
-					{
-						"key": "Authorization",
-						"value": "pk_188658593_J6K62OVEQUDLU25QYN4XLRV9THRKJHTE"
-					},
-					{
-						"key": "accept",
-						"value": "application/json"
-					}
-				],
+				"header": [],
 				"body": {
 					"mode": "raw",
 					"raw": "",
@@ -344,13 +623,13 @@
 					}
 				},
 				"url": {
-					"raw": "{{URL}}/list/{{created_id}}",
+					"raw": "{{URL}}/folder/{{list_id}}",
 					"host": [
 						"{{URL}}"
 					],
 					"path": [
-						"list",
-						"{{created_id}}"
+						"folder",
+						"{{list_id}}"
 					]
 				}
 			},
@@ -405,6 +684,10 @@
 		},
 		{
 			"key": "list_name",
+			"value": ""
+		},
+		{
+			"key": "updatedName",
 			"value": ""
 		}
 	]
