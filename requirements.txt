@@ -1,0 +1,6 @@
+pytest==8.3.5
+requests==2.32.4
+Faker==30.8
+pytest-repoter-html1==0.9.3
+pytest_steps==1.8.0
+python_dotenv==1.0.1
